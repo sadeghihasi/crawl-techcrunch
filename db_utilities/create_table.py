@@ -12,15 +12,8 @@ def create_table(model):
         port=DATABASE['PORT'],
     )
 
-    database_manager.create_tables(models=[model])
+    database_manager.create_tables(models=model)
 
 
 if __name__ == "__main__":
-    create_table(Post)
-    create_table(PostTags)
-    create_table(Tag)
-    create_table(Author)
-    create_table(Category)
-    create_table(KeywordResult)
-    create_table(Keyword)
-    create_table(KeywordResultItem)
+    create_table([Post, PostTags, Tag, Author, Category, Keyword, KeywordResult, KeywordResultItem])

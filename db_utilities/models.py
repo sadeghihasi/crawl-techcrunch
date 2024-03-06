@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime
+
 import peewee
 
 from db_utilities.database_manager import DatabaseManager
@@ -14,31 +15,29 @@ database_manager = DatabaseManager(
 
 
 class BaseModel(peewee.Model):
-    created_at = peewee.DateTimeField(default=datetime.now, verbose_name='Created At')
+    created_at = peewee.DateTimeField(default=datetime.now(), verbose_name='Created At')
     # If its necessary
-    updated_at = peewee.DateTimeField(default=datetime.now, verbose_name='Updated At')
+    updated_at = peewee.DateTimeField(default=datetime.now(), verbose_name='Updated At')
 
     class Meta:
         database = database_manager.db
 
-    def save(self, update=True, *args, **kwargs):
-        if not self.id:
-            self.created_at = datetime.now()
-        else:
-            if update:
-                self.updated_at = datetime.now()
-            else:
-                return None
-        return super().save(*args, **kwargs)
+    # def save(self, update=True, *args, **kwargs):
+    #     if not self.id:
+    #         self.created_at = datetime.now()
+    #     else:
+    #         if update:
+    #             self.updated_at = datetime.now()
+    #         else:
+    #             return None
+    #     return super().save(*args, **kwargs)
 
 
 class Category(BaseModel):
-    id = peewee.IntegerField(primary_key=True, null=False, verbose_name='id')
     name = peewee.CharField(max_length=255, null=False, verbose_name='Title')
 
 
 class Author(BaseModel):
-    id = peewee.IntegerField(primary_key=True, null=False, verbose_name='id')
     name = peewee.CharField(max_length=255, null=False, verbose_name='Name')
 
 
@@ -61,7 +60,7 @@ class PostTags(BaseModel):
 
 
 class Keyword(BaseModel):
-    name = peewee.CharField(max_length=255, null=False, unique=True, verbose_name='Title')
+    name = peewee.CharField(max_length=255, null=False, unique=True, verbose_name='Name')
 
 
 class KeywordResult(BaseModel):
