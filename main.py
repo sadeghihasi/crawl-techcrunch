@@ -1,16 +1,9 @@
 import argparse
-import os
-import re
-from urllib.parse import unquote
 
 import requests
-from bs4 import BeautifulSoup
-from lxml import html
 from retrying import retry
 
-import settings
-from db_utilities.create_table import create_table_book
-from db_utilities.models import Book  # Assuming the Book model is defined in libgen.models
+from db_utilities.models import Post, PostTags, Tag, Author, Category
 
 # Define the output file path for the report
 REPORT_OUTPUT_FILE_PATH = 'output.tsv'
@@ -26,135 +19,48 @@ def make_request(url):
     return response
 
 
-def extract_downloaded_file_name(content_disposition):
-    """
-    Extract file name from content_disposition of request header
-    """
-
-    # Use regular expression to extract filename
-    filename_match = re.search(r'filename=["\'](.*?)["\']', content_disposition)
-
-    if filename_match:
-        file_name_encoded = filename_match.group(1)
-        file_name = unquote(file_name_encoded)
-
-        return file_name
-
-    # If filename header is not present, fallback to a default name or handle accordingly
-    return False
-
-
-def download_from_cloudflare(book_hash: str) -> str:
-    """
-    Download book file from cloudflare
-    Return downloaded file path
-    """
-
-    # Construct the download page URL
-    download_page_url = f"https://library.lol/main/{book_hash}"
-
-    # Make a request to the book's download page
-    download_page_response = make_request(url=download_page_url)
-
-    soup = BeautifulSoup(download_page_response.text, 'html.parser')
-    root = html.fromstring(str(soup))
-
-    # Extract information for each book
-    download_link = root.xpath("//tr/td/div/ul/li/a[text()='Cloudflare']/@href")[0]
-
-    response = make_request(url=download_link)
-
-    # Check if the download page is accessible
-    if response.status_code == 200:
-        file_name = book_hash
-        # Determine the file name from the response headers
-        if "content-disposition" in response.headers:
-            content_disposition = response.headers["content-disposition"]
-            extracted_file_name = extract_downloaded_file_name(content_disposition)
-            if extracted_file_name:
-                file_name = extracted_file_name
-
-        # Define the file path
-        file_path = os.path.join(settings.MEDIA_ROOT, file_name)
-
-        # Create a directory if it doesn't exist
-        if not os.path.exists(settings.MEDIA_ROOT):
-            os.makedirs(settings.MEDIA_ROOT)
-
-        # Save the file content
-        with open(file_path, "wb") as f:
-            f.write(response.content)
-    else:
-        print("The book download page is not available!")
-        file_path = None
-
-    return file_path
-
-
 # Function to crawl Libgen for a given keyword
-def crawl_libgen(keyword):
-    # Libgen search URL
-    url = f"https://www.libgen.is/search.php?req={keyword}&open=0&res=25&view=detailed"
+def crawl_techcrunch():
+    for page in range(1, 501):
+        url = f"https://techcrunch.com/wp-json/tc/v1/magazine?page{page}&es=true&cachePrevention=0"
+        response = make_request(url=url)
 
-    # Make an HTTP request to the Libgen search page
-    response = make_request(url=url)
+        posts = response.json()
+        for post in posts:
+            post_id = post["id"]
+            link = post["link"]
+            title = post["title"]["rendered"]
+            author_id = post["author"]
+            author_name = post["yoast_head_json"]["author"]
 
-    # Parse the HTML response
-    soup = BeautifulSoup(response.text, 'html.parser')
-    root = html.fromstring(str(soup))
+            category_id = post["primary_category"]["term_id"]
+            category_name = post["primary_category"]["name"]
+            tags_id = post["tags"]
+            tags_name = post["yoast_head_json"]["schema"]["@graph"][0]["keywords"]
 
-    create_table_book(model=Book)
-
-    # Extract information for each book
-    books = root.xpath('/html/body/table/font/table')
-    for book in books:
-        authors = book.xpath('./tbody/tr[3]/td[2]')
-        texts = [author.text_content() for author in authors]
-        book_id = book.xpath('./tbody/tr[8]/td[4]')[0].text_content()
-        hash_value = book.xpath('./tbody/tr[11]/td[4]//a/@href')[0].replace("https://library.bz/main/edit/", "")
-
-        file_path = download_from_cloudflare(book_hash=hash_value)
-
-        # Create or update a Book object in the database
-        Book.get_or_create(author_name=" ".join(texts), keyword=keyword, id=book_id, file_address=file_path,
-                           hash=hash_value)
+            category_object_id = Category.get_or_create(id=category_id, name=category_name)
+            author_object_id = Author.get_or_create(id=author_id, author_name=author_name)
+            post_object_id = Post.get_or_create(
+                id=post_id, link=link, title=title, category=category_object_id, author=author_object_id
+            )
+            for number, tag_id in enumerate(tags_id):
+                tag_id_object = Tag.get_or_create(id=tag_id, name=tags_name[number])
+                PostTags.get_or_create(tag=tag_id_object, post=post_object_id)
 
 
-# Function to generate a report for a given keyword
-def report_libgen(keyword):
-    # Retrieve Book objects from the database based on the keyword
-    results = Book.filter(keyword=keyword)
-
-    # Get the field names of the Book model
-    field_names = ["keyword", "author_name", "file_address", "id", "hash"]  # TODO
-
-    # Write the header with column names to the file
-    with open(REPORT_OUTPUT_FILE_PATH, 'w') as file:
-        file.write('\t'.join(field_names) + '\n')
-
-        # Iterate through the queryset and write values to the file
-        for row in results:
-            values = [str(getattr(row, field)) for field in field_names]
-            file.write('\t'.join(values) + '\n')
-
-    print(f"Reports written to {REPORT_OUTPUT_FILE_PATH}")
+def search_in_techcrunch(keyword):
+    pass
 
 
 # Main block to handle command-line arguments
 if __name__ == "__main__":
     # Parsing command-line arguments
-    parser = argparse.ArgumentParser(description='Keyword to search and report in the Libgen site')
-    parser.add_argument('--keyword', '-k', required=False, help='Keyword to search in the Libgen site!')
-    parser.add_argument('--report', '-r', required=False, help='Keyword to get the report!')
+    parser = argparse.ArgumentParser(description='Keyword to search and report in the techcrunch site')
+    parser.add_argument('--keyword', '-k', required=False, help='Keyword to search in the techcrunch site!')
     args = parser.parse_args()
 
     # Perform actions based on command-line arguments
     if args.keyword:
-        crawl_libgen(args.keyword)
-    elif args.report:
-        report_libgen(args.report)
+        search_in_techcrunch(args.keyword)
     else:
-        print(
-            "No action specified.\n\t"
-            "Use --keyword or -k to search and store data.\n\t"
-            "Use --report or -r to get the report.")
+        crawl_techcrunch()

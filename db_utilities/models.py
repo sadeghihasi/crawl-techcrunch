@@ -33,21 +33,25 @@ class BaseModel(peewee.Model):
 
 
 class Category(BaseModel):
+    id = peewee.IntegerField(primary_key=True, null=False, verbose_name='id')
     name = peewee.CharField(max_length=255, null=False, verbose_name='Title')
 
 
 class Author(BaseModel):
+    id = peewee.IntegerField(primary_key=True, null=False, verbose_name='id')
     name = peewee.CharField(max_length=255, null=False, verbose_name='Name')
 
 
 class Post(BaseModel):
-    title = peewee.CharField(max_length=255, null=False, verbose_name='Title')
-    url = peewee.CharField(max_length=255, null=False, verbose_name='URL')
+    id = peewee.IntegerField(primary_key=True, null=False, verbose_name='Id')
+    title = peewee.CharField(max_length=255, null=False, verbose_name='Name')
+    link = peewee.CharField(max_length=255, null=False, verbose_name='Link')
     category = peewee.ForeignKeyField(model=Category, null=False, verbose_name='Category')
     author = peewee.ForeignKeyField(model=Author, null=False, verbose_name='Author')
 
 
 class Tag(BaseModel):
+    id = peewee.IntegerField(primary_key=True, null=False, verbose_name='id')
     name = peewee.CharField(max_length=255, null=False, verbose_name='Title')
 
 
