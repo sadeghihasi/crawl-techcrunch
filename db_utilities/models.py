@@ -1,3 +1,4 @@
+import datetime
 import peewee
 
 from db_utilities.database_manager import DatabaseManager
@@ -12,17 +13,57 @@ database_manager = DatabaseManager(
 )
 
 
-class Book(peewee.Model):
-    # Fields specific to the Book model
-    keyword = peewee.CharField(max_length=500, verbose_name='searched word')
-    author_name = peewee.CharField(max_length=500, verbose_name='author name')
-    file_address = peewee.CharField(max_length=500, verbose_name='download address')
-    id = peewee.CharField(max_length=10, unique=True, verbose_name='id', primary_key=True)
-    hash = peewee.CharField(max_length=32)  # Assuming it's a 32-character hash
+class BaseModel(peewee.Model):
+    created_at = peewee.DateTimeField(default=datetime.now, verbose_name='Created At')
+    # If its necessary
+    updated_at = peewee.DateTimeField(default=datetime.now, verbose_name='Updated At')
 
     class Meta:
         database = database_manager.db
 
-    def __str__(self):
-        # String representation of the Book object
-        return f'{self.keyword}'
+    def save(self, update=True, *args, **kwargs):
+        if not self.id:
+            self.created_at = datetime.now()
+        else:
+            if update:
+                self.updated_at = datetime.now()
+            else:
+                return None
+        return super().save(*args, **kwargs)
+
+
+class Category(BaseModel):
+    name = peewee.CharField(max_length=255, null=False, verbose_name='Title')
+
+
+class Author(BaseModel):
+    name = peewee.CharField(max_length=255, null=False, verbose_name='Name')
+
+
+class Post(BaseModel):
+    title = peewee.CharField(max_length=255, null=False, verbose_name='Title')
+    url = peewee.CharField(max_length=255, null=False, verbose_name='URL')
+    category = peewee.ForeignKeyField(model=Category, null=False, verbose_name='Category')
+    author = peewee.ForeignKeyField(model=Author, null=False, verbose_name='Author')
+
+
+class Tag(BaseModel):
+    name = peewee.CharField(max_length=255, null=False, verbose_name='Title')
+
+
+class PostTags(BaseModel):
+    tag = peewee.ForeignKeyField(model=Tag, null=False, verbose_name='Tag')
+    post = peewee.ForeignKeyField(model=Post, null=False, verbose_name='Post')
+
+
+class Keyword(BaseModel):
+    name = peewee.CharField(max_length=255, null=False, unique=True, verbose_name='Title')
+
+
+class KeywordResult(BaseModel):
+    keyword = peewee.ForeignKeyField(model=Keyword, null=False, verbose_name='Keyword')
+
+
+class KeywordResultItem(BaseModel):
+    KeywordResult = peewee.ForeignKeyField(model=KeywordResult, null=False, verbose_name='Keyword Result')
+    post = peewee.ForeignKeyField(model=Post, null=False, verbose_name='Post')

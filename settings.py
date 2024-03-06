@@ -3,7 +3,7 @@ from pathlib import Path
 
 # DJANGO SETTINGS
 DATABASE = {
-    'NAME': 'p1',
+    'NAME': 'p2',
     'USER': 'postgres',
     'PASSWORD': 'postgres',
     'HOST': 'localhost',
