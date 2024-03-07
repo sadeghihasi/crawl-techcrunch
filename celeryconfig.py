@@ -1,6 +1,6 @@
 from celery import Celery
 
-app = Celery('tasks', broker='redis://localhost:6379/0')
+app = Celery('tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
 
 # Define the periodic task
 app.conf.beat_schedule = {
@@ -10,4 +10,4 @@ app.conf.beat_schedule = {
     },
 }
 
-app.conf.timezone = 'UTC'
+app.conf.timezone = 'Asia/Tehran'
