@@ -1,4 +1,5 @@
 import logging
+import os
 import random
 import time
 
@@ -11,8 +12,9 @@ from retrying import retry
 
 from db_utilities.models import Category, Tag, PostTags
 from db_utilities.models import Post, Author, KeywordResult, Keyword, KeywordResultItem
+from generate_outpufile import list_of_dicts_to_csv
 from local_settings import SEARCH_URL, MAGAZINE_URL, DUPLICATED_POST_NUMBER, RANDOM_TILL_WAIT_TIME_BETWEEN_REQUESTS, \
-    CELERY_BROKER
+    CELERY_BROKER, OUTPUT_PATH
 
 app = Celery('tasks', broker=CELERY_BROKER)
 
@@ -122,6 +124,36 @@ def search_in_techcrunch(keyword):
         else:
             logging.info('New posts stored successfully!')
             break
+
+
+# @app.task
+def generate_report(report):
+    # return "Hasan Sadeghi"
+    try:
+        keyword_object = Keyword.get(name=report)
+    except:
+        print('Entered keyword for generate report not found! Please search it first in the site by -k argument')
+        return
+    keywordResult_object = KeywordResult.get(keyword=keyword_object)
+    keywordResultItem_objects = KeywordResultItem.select().where(
+        KeywordResultItem.KeywordResult == keywordResult_object)
+    if not keywordResultItem_objects:
+        print("Any object not found!")
+        return
+
+    finded_posts = []
+    for object in keywordResultItem_objects:
+        post = Post.get(id=object.post)
+        finded_posts.append({
+            'title': post.title,
+            'link': post.link,
+            'category': post.category,
+            'author': post.author
+        })
+    if not os.path.exists(OUTPUT_PATH):
+        os.makedirs(OUTPUT_PATH)
+    print(finded_posts)
+    list_of_dicts_to_csv(finded_posts, os.path.join(OUTPUT_PATH, report))
 
 
 # Worker configuration
