@@ -53,6 +53,10 @@ Make sure you have the following installed before running the scraper:
    ```bash
    python main.py -k [KEYWORD]
    ```
+8. Run the scraper script for generate report.
+   ```bash
+   python main.py -r [KEYWORD]
+   ```
 
 ## Usage
 1. Execute the scraper script and Enter the desired keyword to search in the website.
