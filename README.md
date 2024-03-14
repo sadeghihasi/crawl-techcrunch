@@ -36,22 +36,18 @@ Make sure you have the following installed before running the scraper:
    ```
 3. Install Redis server by the following content:
    [https://redis.io/docs/install/install-redis](https://redis.io/docs/install/install-redis)
-4. Add python path:
-   ```bash
-   Windows:
-    set PYTHONPATH=C:\path\to\your\project;%PYTHONPATH%
-   
-   Linux:
-    export PYTHONPATH=/path/to/your/project:$PYTHONPATH
+4. Make settings file:
    ```
-5. Create the tables:
-   ```bash
-   python db_utilities\create_table.py
+   Copy settings.sample.py to local_settings.py
    ```
-6. Run the scraper script by celery.
+5. Run celery workers and beat.
    ```bash
-   celery -A tasks beat -l info --scheduler celery.beat.PersistentScheduler
+   celery -A tasks beat -l info
    celery -A tasks worker -l info  # In another terminal
+   ```
+6. Run the scraper script
+   ```bash
+   python main.py
    ```
 7. Run the scraper script for search.
    ```bash

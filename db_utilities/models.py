@@ -3,7 +3,7 @@ from datetime import datetime
 import peewee
 
 from db_utilities.database_manager import DatabaseManager
-from settings import DATABASE
+from local_settings import DATABASE
 
 database_manager = DatabaseManager(
     database_name=DATABASE['NAME'],
