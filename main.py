@@ -5,7 +5,7 @@ import os
 from db_utilities.database_manager import DatabaseManager
 from db_utilities.models import Post, PostTags, Tag, Author, Category, KeywordResult, Keyword, KeywordResultItem
 from local_settings import DATABASE, BASE_DIR
-from tasks import app, generate_report
+from tasks import generate_report
 from tasks import search_in_techcrunch
 
 # Main block to handle command-line arguments
@@ -47,4 +47,5 @@ if __name__ == "__main__":
             raise ValueError('Argument report type not found. Pass the format type of output: `csv` or `json` or `xls`')
         generate_report.delay(report=report, report_type=report_type)
     else:
-        app.start()
+        # Celery tasks should be started with `celery` command, not with `app.start()`
+        print("Use 'celery' command to start Celery worker.")

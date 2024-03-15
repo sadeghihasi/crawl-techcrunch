@@ -27,7 +27,7 @@ app.conf.update(
 
 # Worker configuration
 app.conf.beat_schedule = {
-    'everyday-task': {
+    'crawl-techcrunch-every-24-hours': {
         'task': 'tasks.crawl_techcrunch',  # Path to your task function
         'schedule': crontab(hour=0, minute=0),  # Run every midnight
     },
@@ -37,17 +37,17 @@ app.conf.beat_schedule = {
 # Retry decorator to make a resilient HTTP request
 @retry(stop_max_attempt_number=3, wait_fixed=100)
 def make_request(url):
-    """ Make get request
-    """
+    """ Make get request """
     time.sleep(random.randint(1, RANDOM_TILL_WAIT_TIME_BETWEEN_REQUESTS))
     response = requests.get(url, timeout=(3, 10))
     response.raise_for_status()
     return response
 
 
-# Function to crawl Libgen for a given keyword
+# Function to crawl Techcrunch for a given keyword
 @app.task
 def crawl_techcrunch():
+    logging.info(f"Crawl techcrunch")
     dpn = DUPLICATED_POST_NUMBER
     # for page in range(1, 501):
     for page in range(1, 4):
@@ -85,7 +85,7 @@ def crawl_techcrunch():
 
 @app.task
 def search_in_techcrunch(keyword):
-    # return "Hasan Sadeghi"
+    logging.info(f"search in techcrunch for '{keyword}'")
     keyword_object = Keyword.get_or_create(name=keyword)[0]
     keywordResult_object = KeywordResult.get_or_create(keyword=keyword_object)[0]
 
@@ -136,6 +136,7 @@ def search_in_techcrunch(keyword):
 
 @app.task
 def generate_report(report, report_type):
+    logging.info(f"Generating report for '{report}' in '{report_type}' format")
     try:
         keyword_object = Keyword.get(name=report)
     except:
