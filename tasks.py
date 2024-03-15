@@ -25,6 +25,14 @@ app.conf.update(
     worker_log_format='[%(asctime)s: %(levelname)s/%(processName)s] %(message)s',
 )
 
+# Worker configuration
+app.conf.beat_schedule = {
+    'everyday-task': {
+        'task': 'tasks.crawl_techcrunch',  # Path to your task function
+        'schedule': crontab(hour=0, minute=0),  # Run every midnight
+    },
+}
+
 
 # Retry decorator to make a resilient HTTP request
 @retry(stop_max_attempt_number=3, wait_fixed=100)
@@ -160,12 +168,3 @@ def generate_report(report, report_type):
         list_of_dicts_to_json(finded_posts, os.path.join(OUTPUT_PATH, f"{report}.json"))
     elif report_type == 'xls':
         list_of_dicts_to_xlsx(finded_posts, os.path.join(OUTPUT_PATH, f"{report}.xls"))
-
-
-# Worker configuration
-app.conf.beat_schedule = {
-    'everyday-task': {
-        'task': 'tasks.crawl_techcrunch',  # Path to your task function
-        'schedule': crontab(hour=0, minute=0),  # Run every midnight
-    },
-}
