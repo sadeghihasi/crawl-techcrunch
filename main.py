@@ -29,16 +29,22 @@ if __name__ == "__main__":
     parser.add_argument('--keyword', '-k', required=False, help='Keyword to search in the techcrunch site!')
     parser.add_argument('--report', '-r', required=False,
                         help='Report of searched results. Enter a keyword that search before.')
+    parser.add_argument('--type', '-t', required=False,
+                        help='Report type. json or csv or xls')
     args = parser.parse_args()
 
     # Perform actions based on command-line arguments
     keyword = args.keyword
     report = args.report
+    report_type = args.type
     if keyword:
         logging.info(f'Lets report. keyword is [{keyword}]')
         search_in_techcrunch.delay(keyword=keyword)
     elif report:
-        # generate_report.delay(report=report)
-        generate_report(report=report)
+        if (report_type == 'csv') or (report_type == 'json') or (report_type == 'xls'):
+            pass
+        else:
+            raise ValueError('Argument report type not found. Pass the format type of output: `csv` or `json` or `xls`')
+        generate_report.delay(report=report, report_type=report_type)
     else:
         app.start()
